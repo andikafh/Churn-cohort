@@ -3,7 +3,7 @@
 Dashboard contoh analisa kualitas pelanggan berlangganan: pelanggan aktif,
 berhenti berlangganan, dan "berhenti cepat" (<3 bulan) per bulan & per cabang.
 
-Data **dianonimkan**: nama cabang disamarkan (Cabang 01…), tanpa data pribadi
-pelanggan, tanpa angka finansial. Hanya untuk ilustrasi metode.
+Tanpa data pribadi pelanggan, tanpa nama sales, tanpa angka finansial.
+Menampilkan nama cabang dan metrik kualitas per bulan & cabang.
 
 Dibuka di: halaman GitHub Pages repo ini.
