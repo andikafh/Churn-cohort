@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="id"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kesehatan Pelanggan — Ringkas</title>
+<style>
+:root{--bg:#0f1419;--panel:#1a212b;--line:#2d3a4a;--txt:#e9eef4;--muted:#95a2b3;
+  --ok:#2ecc71;--warn:#f1c40f;--bad:#e74c3c;--accent:#4f9cff;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:"Segoe UI",system-ui,sans-serif;font-size:16px;line-height:1.5}
+.wrap{max-width:1000px;margin:0 auto;padding:24px 18px 70px}
+.tabs{display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--line)}
+.tab{padding:11px 24px;color:var(--muted);text-decoration:none;border-bottom:3px solid transparent;font-weight:700;font-size:16px}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab:hover{color:var(--txt)}
+h1{font-size:24px;margin:0 0 4px}
+.sub{color:var(--muted);font-size:14px;margin-bottom:18px}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:22px}
+select{background:var(--panel);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:16px}
+.verdict{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:12px;padding:16px 18px;font-size:18px;margin-bottom:24px}
+.q{font-size:14px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:30px 0 12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+.card .l{color:var(--muted);font-size:14px}
+.card .v{font-size:34px;font-weight:800;margin-top:6px;line-height:1}
+.card .d{color:var(--muted);font-size:13px;margin-top:6px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-top:14px}
+.cap{color:var(--muted);font-size:14px;margin:4px 0 14px}
+.hbar{display:flex;align-items:center;gap:12px;margin:10px 0}
+.hbar .nm{width:140px;text-align:right;font-size:15px;flex:none}
+.hbar .track{flex:1;background:#232d3a;border-radius:6px;height:26px;position:relative}
+.hbar .fill{height:26px;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:13px;font-weight:700;color:#06121f}
+.status{display:inline-block;padding:3px 10px;border-radius:20px;font-size:13px;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:15px;margin-top:6px}
+th,td{padding:10px;text-align:right;border-bottom:1px solid var(--line)}
+th.first,td.first{text-align:left}
+th{color:var(--muted);font-weight:600}
+.act{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 20px 14px}
+.act li{margin:12px 0;font-size:16px}
+.big{font-size:40px;font-weight:800}
+.link{color:var(--accent);text-decoration:none}
+svg text{font-family:inherit}
+</style></head>
+<body><div class="wrap">
+  <div class="tabs" id="tabbar"><a class="tab active" href="sederhana.html">Sederhana</a><a class="tab" href="index.html">Lengkap</a></div>
+  <h1>Kesehatan Pelanggan Berlangganan</h1>
+  <div class="sub" id="sub"></div>
+  <div class="row">
+    <label>Dari bulan</label><select id="fromM"></select>
+    <label>Sampai</label><select id="toM"></select>
+    <label>Cabang</label><select id="bf"><option value="ALL">Semua Cabang</option></select>
+  </div>
+
+  <div class="verdict" id="verdict"></div>
+
+  <div class="q">1 · Seberapa sehat pelanggan kita?</div>
+  <div class="cards" id="cards"></div>
+  <div class="panel">
+    <b>Tren: apakah makin banyak yang berhenti cepat?</b>
+    <div class="cap">Garis = dari 100 pelanggan baru tiap bulan, berapa yang berhenti dalam 3 bulan pertama. <b style="color:var(--bad)">Naik = makin buruk.</b> Titik berongga = bulan baru (belum lengkap 3 bulan).</div>
+    <div id="trend"></div>
+  </div>
+  <div class="panel">
+    <b>Tabel per Bulan (cohort)</b>
+    <div class="cap">Tiap baris = pelanggan baru pada bulan itu <span id="ctScope"></span>, beserta nasibnya. Ikut filter bulan & cabang.</div>
+    <div style="overflow:auto"><table id="ctbl"><thead></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="q">2 · Cabang mana paling bermasalah?</div>
+  <div class="panel">
+    <div class="cap">Diurut dari yang paling banyak pelanggannya berhenti cepat.</div>
+    <div id="bars"></div>
+    <table id="tbl"><thead></thead><tbody></tbody></table>
+  </div>
+
+  <div class="q">3 · Apa yang sebaiknya dilakukan?</div>
+  <ul class="act" id="actions"></ul>
+
+  <div class="sub" style="margin-top:24px">Perlu audit rinci (nama pelanggan, sales, pembayaran)? Buka <a class="link" href="index.html">dashboard lengkap</a>. · Data <span id="gen"></span></div>
+</div>
+<script>
+const D={"cells": [{"branch_id": 5, "bln": "2025-11", "closing": 184, "aktif": 153, "isolir": 3, "terminate": 28, "early90": 5}, {"branch_id": 1, "bln": "2025-09", "closing": 253, "aktif": 189, "isolir": 4, "terminate": 60, "early90": 1}, {"branch_id": 5, "bln": "2025-08", "closing": 222, "aktif": 162, "isolir": 5, "terminate": 55, "early90": 1}, {"branch_id": 2, "bln": "2025-08", "closing": 178, "aktif": 138, "isolir": 4, "terminate": 36, "early90": 2}, {"branch_id": 1, "bln": "2025-08", "closing": 281, "aktif": 220, "isolir": 7, "terminate": 54, "early90": 3}, {"branch_id": 3, "bln": "2025-08", "closing": 143, "aktif": 106, "isolir": 2, "terminate": 35, "early90": 4}, {"branch_id": 4, "bln": "2025-08", "closing": 123, "aktif": 80, "isolir": 5, "terminate": 38, "early90": 0}, {"branch_id": 5, "bln": "2025-09", "closing": 207, "aktif": 158, "isolir": 5, "terminate": 44, "early90": 2}, {"branch_id": 3, "bln": "2025-09", "closing": 219, "aktif": 163, "isolir": 4, "terminate": 52, "early90": 2}, {"branch_id": 4, "bln": "2025-09", "closing": 160, "aktif": 100, "isolir": 5, "terminate": 55, "early90": 1}, {"branch_id": 2, "bln": "2025-09", "closing": 196, "aktif": 160, "isolir": 4, "terminate": 32, "early90": 0}, {"branch_id": 3, "bln": "2025-10", "closing": 192, "aktif": 146, "isolir": 9, "terminate": 37, "early90": 3}, {"branch_id": 1, "bln": "2025-10", "closing": 270, "aktif": 220, "isolir": 5, "terminate": 45, "early90": 5}, {"branch_id": 2, "bln": "2025-10", "closing": 195, "aktif": 169, "isolir": 1, "terminate": 25, "early90": 0}, {"branch_id": 4, "bln": "2025-10", "closing": 134, "aktif": 91, "isolir": 2, "terminate": 41, "early90": 0}, {"branch_id": 5, "bln": "2025-10", "closing": 201, "aktif": 154, "isolir": 11, "terminate": 36, "early90": 1}, {"branch_id": 1, "bln": "2025-11", "closing": 279, "aktif": 224, "isolir": 7, "terminate": 48, "early90": 7}, {"branch_id": 4, "bln": "2025-11", "closing": 132, "aktif": 100, "isolir": 8, "terminate": 24, "early90": 3}, {"branch_id": 3, "bln": "2025-11", "closing": 218, "aktif": 171, "isolir": 2, "terminate": 45, "early90": 7}, {"branch_id": 2, "bln": "2025-11", "closing": 190, "aktif": 156, "isolir": 5, "terminate": 29, "early90": 4}, {"branch_id": 3, "bln": "2025-12", "closing": 208, "aktif": 163, "isolir": 7, "terminate": 38, "early90": 5}, {"branch_id": 1, "bln": "2026-03", "closing": 286, "aktif": 225, "isolir": 11, "terminate": 50, "early90": 13}, {"branch_id": 4, "bln": "2025-12", "closing": 147, "aktif": 110, "isolir": 3, "terminate": 34, "early90": 3}, {"branch_id": 5, "bln": "2025-12", "closing": 231, "aktif": 186, "isolir": 3, "terminate": 42, "early90": 4}, {"branch_id": 1, "bln": "2025-12", "closing": 248, "aktif": 199, "isolir": 6, "terminate": 43, "early90": 4}, {"branch_id": 7, "bln": "2025-12", "closing": 102, "aktif": 73, "isolir": 13, "terminate": 16, "early90": 3}, {"branch_id": 2, "bln": "2025-12", "closing": 189, "aktif": 156, "isolir": 5, "terminate": 28, "early90": 2}, {"branch_id": 10, "bln": "2025-08", "closing": 260, "aktif": 202, "isolir": 11, "terminate": 47, "early90": 0}, {"branch_id": 10, "bln": "2025-09", "closing": 267, "aktif": 182, "isolir": 12, "terminate": 73, "early90": 1}, {"branch_id": 10, "bln": "2025-10", "closing": 263, "aktif": 197, "isolir": 10, "terminate": 56, "early90": 1}, {"branch_id": 10, "bln": "2025-11", "closing": 264, "aktif": 190, "isolir": 5, "terminate": 69, "early90": 8}, {"branch_id": 10, "bln": "2025-12", "closing": 257, "aktif": 194, "isolir": 13, "terminate": 50, "early90": 7}, {"branch_id": 8, "bln": "2025-12", "closing": 97, "aktif": 83, "isolir": 2, "terminate": 12, "early90": 1}, {"branch_id": 7, "bln": "2026-01", "closing": 99, "aktif": 80, "isolir": 1, "terminate": 18, "early90": 5}, {"branch_id": 10, "bln": "2026-01", "closing": 255, "aktif": 196, "isolir": 7, "terminate": 52, "early90": 9}, {"branch_id": 1, "bln": "2026-01", "closing": 290, "aktif": 235, "isolir": 12, "terminate": 43, "early90": 14}, {"branch_id": 3, "bln": "2026-02", "closing": 231, "aktif": 181, "isolir": 8, "terminate": 42, "early90": 8}, {"branch_id": 2, "bln": "2026-01", "closing": 196, "aktif": 157, "isolir": 5, "terminate": 34, "early90": 6}, {"branch_id": 3, "bln": "2026-01", "closing": 202, "aktif": 163, "isolir": 4, "terminate": 35, "early90": 8}, {"branch_id": 8, "bln": "2026-01", "closing": 90, "aktif": 76, "isolir": 1, "terminate": 13, "early90": 3}, {"branch_id": 5, "bln": "2026-02", "closing": 215, "aktif": 167, "isolir": 7, "terminate": 41, "early90": 7}, {"branch_id": 5, "bln": "2026-01", "closing": 190, "aktif": 156, "isolir": 3, "terminate": 31, "early90": 3}, {"branch_id": 4, "bln": "2026-01", "closing": 128, "aktif": 107, "isolir": 2, "terminate": 19, "early90": 5}, {"branch_id": 10, "bln": "2026-02", "closing": 269, "aktif": 199, "isolir": 12, "terminate": 58, "early90": 12}, {"branch_id": 11, "bln": "2026-01", "closing": 59, "aktif": 46, "isolir": 1, "terminate": 12, "early90": 1}, {"branch_id": 7, "bln": "2026-02", "closing": 181, "aktif": 137, "isolir": 2, "terminate": 42, "early90": 11}, {"branch_id": 1, "bln": "2026-02", "closing": 294, "aktif": 241, "isolir": 8, "terminate": 45, "early90": 7}, {"branch_id": 13, "bln": "2026-02", "closing": 83, "aktif": 73, "isolir": 4, "terminate": 6, "early90": 0}, {"branch_id": 10, "bln": "2026-04", "closing": 312, "aktif": 239, "isolir": 19, "terminate": 54, "early90": 15}, {"branch_id": 11, "bln": "2026-02", "closing": 66, "aktif": 49, "isolir": 2, "terminate": 15, "early90": 1}, {"branch_id": 2, "bln": "2026-02", "closing": 209, "aktif": 164, "isolir": 7, "terminate": 38, "early90": 11}, {"branch_id": 9, "bln": "2026-02", "closing": 33, "aktif": 30, "isolir": 0, "terminate": 3, "early90": 0}, {"branch_id": 12, "bln": "2026-02", "closing": 95, "aktif": 80, "isolir": 2, "terminate": 13, "early90": 3}, {"branch_id": 4, "bln": "2026-02", "closing": 123, "aktif": 82, "isolir": 4, "terminate": 37, "early90": 12}, {"branch_id": 8, "bln": "2026-02", "closing": 84, "aktif": 69, "isolir": 2, "terminate": 13, "early90": 4}, {"branch_id": 7, "bln": "2026-03", "closing": 143, "aktif": 113, "isolir": 8, "terminate": 22, "early90": 5}, {"branch_id": 5, "bln": "2026-03", "closing": 200, "aktif": 166, "isolir": 8, "terminate": 26, "early90": 6}, {"branch_id": 1, "bln": "2026-04", "closing": 368, "aktif": 311, "isolir": 11, "terminate": 46, "early90": 14}, {"branch_id": 10, "bln": "2026-03", "closing": 267, "aktif": 198, "isolir": 8, "terminate": 61, "early90": 13}, {"branch_id": 12, "bln": "2026-03", "closing": 87, "aktif": 71, "isolir": 4, "terminate": 12, "early90": 3}, {"branch_id": 3, "bln": "2026-03", "closing": 267, "aktif": 200, "isolir": 5, "terminate": 62, "early90": 22}, {"branch_id": 2, "bln": "2026-03", "closing": 143, "aktif": 120, "isolir": 4, "terminate": 19, "early90": 6}, {"branch_id": 4, "bln": "2026-03", "closing": 133, "aktif": 74, "isolir": 8, "terminate": 51, "early90": 22}, {"branch_id": 11, "bln": "2026-03", "closing": 82, "aktif": 64, "isolir": 8, "terminate": 10, "early90": 3}, {"branch_id": 13, "bln": "2026-03", "closing": 82, "aktif": 71, "isolir": 3, "terminate": 8, "early90": 1}, {"branch_id": 7, "bln": "2026-04", "closing": 159, "aktif": 130, "isolir": 5, "terminate": 24, "early90": 8}, {"branch_id": 8, "bln": "2026-03", "closing": 64, "aktif": 52, "isolir": 0, "terminate": 12, "early90": 3}, {"branch_id": 9, "bln": "2026-03", "closing": 80, "aktif": 69, "isolir": 2, "terminate": 9, "early90": 3}, {"branch_id": 3, "bln": "2026-04", "closing": 242, "aktif": 181, "isolir": 7, "terminate": 54, "early90": 17}, {"branch_id": 11, "bln": "2026-05", "closing": 110, "aktif": 88, "isolir": 5, "terminate": 17, "early90": 5}, {"branch_id": 5, "bln": "2026-04", "closing": 171, "aktif": 140, "isolir": 7, "terminate": 24, "early90": 9}, {"branch_id": 11, "bln": "2026-04", "closing": 112, "aktif": 90, "isolir": 2, "terminate": 20, "early90": 5}, {"branch_id": 2, "bln": "2026-04", "closing": 203, "aktif": 170, "isolir": 6, "terminate": 27, "early90": 6}, {"branch_id": 12, "bln": "2026-04", "closing": 88, "aktif": 76, "isolir": 0, "terminate": 12, "early90": 6}, {"branch_id": 8, "bln": "2026-04", "closing": 92, "aktif": 73, "isolir": 3, "terminate": 16, "early90": 5}, {"branch_id": 9, "bln": "2026-05", "closing": 123, "aktif": 108, "isolir": 1, "terminate": 14, "early90": 12}, {"branch_id": 4, "bln": "2026-04", "closing": 111, "aktif": 78, "isolir": 2, "terminate": 31, "early90": 22}, {"branch_id": 9, "bln": "2026-04", "closing": 147, "aktif": 133, "isolir": 1, "terminate": 13, "early90": 6}, {"branch_id": 4, "bln": "2026-05", "closing": 134, "aktif": 101, "isolir": 4, "terminate": 29, "early90": 10}, {"branch_id": 7, "bln": "2026-05", "closing": 178, "aktif": 143, "isolir": 9, "terminate": 26, "early90": 12}, {"branch_id": 3, "bln": "2026-05", "closing": 257, "aktif": 201, "isolir": 9, "terminate": 47, "early90": 28}, {"branch_id": 1, "bln": "2026-05", "closing": 307, "aktif": 273, "isolir": 11, "terminate": 23, "early90": 8}, {"branch_id": 5, "bln": "2026-05", "closing": 263, "aktif": 217, "isolir": 19, "terminate": 27, "early90": 8}, {"branch_id": 2, "bln": "2026-05", "closing": 143, "aktif": 121, "isolir": 7, "terminate": 15, "early90": 7}, {"branch_id": 10, "bln": "2026-05", "closing": 317, "aktif": 248, "isolir": 22, "terminate": 47, "early90": 17}, {"branch_id": 13, "bln": "2026-05", "closing": 105, "aktif": 93, "isolir": 4, "terminate": 8, "early90": 4}, {"branch_id": 8, "bln": "2026-05", "closing": 80, "aktif": 63, "isolir": 4, "terminate": 13, "early90": 8}, {"branch_id": 10, "bln": "2026-06", "closing": 266, "aktif": 213, "isolir": 18, "terminate": 35, "early90": 22}, {"branch_id": 13, "bln": "2026-06", "closing": 114, "aktif": 97, "isolir": 4, "terminate": 13, "early90": 11}, {"branch_id": 1, "bln": "2026-06", "closing": 294, "aktif": 261, "isolir": 11, "terminate": 22, "early90": 11}, {"branch_id": 4, "bln": "2026-06", "closing": 129, "aktif": 104, "isolir": 5, "terminate": 20, "early90": 6}, {"branch_id": 9, "bln": "2026-06", "closing": 137, "aktif": 127, "isolir": 1, "terminate": 9, "early90": 6}, {"branch_id": 5, "bln": "2026-06", "closing": 270, "aktif": 229, "isolir": 16, "terminate": 25, "early90": 11}, {"branch_id": 8, "bln": "2026-06", "closing": 150, "aktif": 125, "isolir": 8, "terminate": 17, "early90": 10}, {"branch_id": 2, "bln": "2026-06", "closing": 179, "aktif": 154, "isolir": 2, "terminate": 23, "early90": 11}, {"branch_id": 4, "bln": "2026-07", "closing": 99, "aktif": 72, "isolir": 5, "terminate": 22, "early90": 20}, {"branch_id": 7, "bln": "2026-08", "closing": 203, "aktif": 174, "isolir": 17, "terminate": 12, "early90": 12}, {"branch_id": 13, "bln": "2026-01", "closing": 1, "aktif": 1, "isolir": 0, "terminate": 0, "early90": 0}, {"branch_id": 9, "bln": "2026-01", "closing": 1, "aktif": 1, "isolir": 0, "terminate": 0, "early90": 0}, {"branch_id": 7, "bln": "2026-06", "closing": 185, "aktif": 144, "isolir": 9, "terminate": 32, "early90": 18}, {"branch_id": 13, "bln": "2026-04", "closing": 60, "aktif": 57, "isolir": 1, "terminate": 2, "early90": 0}, {"branch_id": 11, "bln": "2026-08", "closing": 124, "aktif": 116, "isolir": 3, "terminate": 5, "early90": 5}, {"branch_id": 12, "bln": "2026-05", "closing": 110, "aktif": 100, "isolir": 3, "terminate": 7, "early90": 0}, {"branch_id": 7, "bln": "2026-07", "closing": 249, "aktif": 209, "isolir": 13, "terminate": 27, "early90": 23}, {"branch_id": 10, "bln": "2026-07", "closing": 315, "aktif": 259, "isolir": 19, "terminate": 37, "early90": 34}, {"branch_id": 5, "bln": "2026-07", "closing": 213, "aktif": 198, "isolir": 5, "terminate": 10, "early90": 7}, {"branch_id": 11, "bln": "2026-06", "closing": 123, "aktif": 110, "isolir": 3, "terminate": 10, "early90": 3}, {"branch_id": 3, "bln": "2026-06", "closing": 255, "aktif": 185, "isolir": 7, "terminate": 63, "early90": 48}, {"branch_id": 12, "bln": "2026-06", "closing": 126, "aktif": 109, "isolir": 8, "terminate": 9, "early90": 6}, {"branch_id": 3, "bln": "2026-07", "closing": 247, "aktif": 209, "isolir": 4, "terminate": 34, "early90": 30}, {"branch_id": 9, "bln": "2026-07", "closing": 166, "aktif": 154, "isolir": 1, "terminate": 11, "early90": 8}, {"branch_id": 1, "bln": "2026-07", "closing": 324, "aktif": 291, "isolir": 14, "terminate": 19, "early90": 15}, {"branch_id": 11, "bln": "2026-07", "closing": 95, "aktif": 84, "isolir": 7, "terminate": 4, "early90": 4}, {"branch_id": 10, "bln": "2026-08", "closing": 334, "aktif": 291, "isolir": 28, "terminate": 15, "early90": 15}, {"branch_id": 2, "bln": "2026-07", "closing": 186, "aktif": 164, "isolir": 4, "terminate": 18, "early90": 12}, {"branch_id": 1, "bln": "2026-08", "closing": 318, "aktif": 300, "isolir": 12, "terminate": 6, "early90": 5}, {"branch_id": 12, "bln": "2026-07", "closing": 179, "aktif": 172, "isolir": 2, "terminate": 5, "early90": 4}, {"branch_id": 8, "bln": "2026-07", "closing": 152, "aktif": 135, "isolir": 7, "terminate": 10, "early90": 10}, {"branch_id": 13, "bln": "2026-07", "closing": 186, "aktif": 166, "isolir": 12, "terminate": 8, "early90": 8}, {"branch_id": 12, "bln": "2026-08", "closing": 219, "aktif": 205, "isolir": 13, "terminate": 1, "early90": 1}, {"branch_id": 9, "bln": "2026-08", "closing": 186, "aktif": 181, "isolir": 2, "terminate": 3, "early90": 3}, {"branch_id": 4, "bln": "2026-08", "closing": 119, "aktif": 96, "isolir": 20, "terminate": 3, "early90": 3}, {"branch_id": 5, "bln": "2026-08", "closing": 278, "aktif": 256, "isolir": 15, "terminate": 7, "early90": 7}, {"branch_id": 13, "bln": "2026-08", "closing": 127, "aktif": 123, "isolir": 4, "terminate": 0, "early90": 0}, {"branch_id": 14, "bln": "2026-07", "closing": 1, "aktif": 1, "isolir": 0, "terminate": 0, "early90": 0}, {"branch_id": 15, "bln": "2026-07", "closing": 1, "aktif": 1, "isolir": 0, "terminate": 0, "early90": 0}, {"branch_id": 2, "bln": "2026-08", "closing": 139, "aktif": 132, "isolir": 3, "terminate": 4, "early90": 4}, {"branch_id": 3, "bln": "2026-08", "closing": 288, "aktif": 268, "isolir": 12, "terminate": 8, "early90": 8}, {"branch_id": 14, "bln": "2026-08", "closing": 97, "aktif": 90, "isolir": 2, "terminate": 5, "early90": 5}, {"branch_id": 15, "bln": "2026-08", "closing": 83, "aktif": 76, "isolir": 5, "terminate": 2, "early90": 2}, {"branch_id": 8, "bln": "2026-08", "closing": 140, "aktif": 133, "isolir": 6, "terminate": 1, "early90": 1}], "branches": [{"branch_id": 14, "branch_name": "Bangil", "regional": "Pasuruan"}, {"branch_id": 5, "branch_name": "Blimbing", "regional": "Malang"}, {"branch_id": 16, "branch_name": "Bululawang", "regional": "Malang"}, {"branch_id": 2, "branch_name": "Bumiaji", "regional": "Batu"}, {"branch_id": 3, "branch_name": "Dau", "regional": "Batu"}, {"branch_id": 8, "branch_name": "Karangploso", "regional": "Malang"}, {"branch_id": 12, "branch_name": "Kedungkandang", "regional": "Malang"}, {"branch_id": 13, "branch_name": "Kota Lama", "regional": "Malang"}, {"branch_id": 15, "branch_name": "Lawang", "regional": "Malang"}, {"branch_id": 4, "branch_name": "Pakis", "regional": "Malang"}, {"branch_id": 7, "branch_name": "Pasuruan Selatan", "regional": "Pasuruan"}, {"branch_id": 10, "branch_name": "Pasuruan Utara", "regional": "Pasuruan"}, {"branch_id": 9, "branch_name": "Sawojajar", "regional": "Malang"}, {"branch_id": 1, "branch_name": "Temas", "regional": "Batu"}, {"branch_id": 11, "branch_name": "Wendit", "regional": "Malang"}], "meta": {"window_start": "2025-08-01", "window_end": "2026-08-31", "generated": "2026-10-16", "anon": true}};
+const fmt=n=>(n==null?'-':Number(n).toLocaleString('id-ID'));
+const rp=n=>{n=Number(n)||0;return n>=1e9?'Rp'+(n/1e9).toFixed(2)+' miliar':n>=1e6?'Rp'+(n/1e6).toFixed(0)+' juta':'Rp'+fmt(n);};
+const bName={};D.branches.forEach(b=>bName[b.branch_id]=b.branch_name);
+const MONTHS=[...new Set(D.cells.map(c=>c.bln))].sort();
+const TODAY=new Date(D.meta.generated);
+const matured=b=>{const[y,m]=b.split('-').map(Number);return new Date(new Date(y,m,0).getTime()+90*864e5)<=TODAY;};
+const F=['closing','aktif','isolir','terminate','early90','mrr_all','mrr_term','mrr_aktif'];
+const blank=()=>{const o={};F.forEach(f=>o[f]=0);return o;};
+const add=(o,r)=>{F.forEach(f=>o[f]+=(Number(r[f])||0));return o;};
+const pct=(a,b)=>b>0?100*a/b:0;
+const ANON=!!D.meta.anon;
+function statusOf(p){return p>=5?['🔴 Bahaya','var(--bad)']:p>=3?['⚠️ Waspada','var(--warn)']:['✅ Aman','var(--ok)'];}
+let branch='ALL',fromM,toM;
+const selMonths=()=>MONTHS.filter(m=>m>=fromM&&m<=toM);
+
+function cur(){const sel=selMonths();return D.cells.filter(r=>sel.includes(r.bln)&&(branch==='ALL'||r.branch_id===Number(branch)));}
+function monthly(){const m={};cur().forEach(r=>{(m[r.bln]=m[r.bln]||blank());add(m[r.bln],r);});return MONTHS.filter(b=>m[b]).map(b=>({bln:b,...m[b]}));}
+function byBranch(){const sel=selMonths(),m={};D.cells.filter(r=>sel.includes(r.bln)).forEach(r=>{(m[r.branch_id]=m[r.branch_id]||blank());add(m[r.branch_id],r);});
+  return Object.keys(m).map(id=>({id:Number(id),name:bName[id]||('#'+id),...m[id]})).filter(r=>r.closing>0).sort((a,b)=>pct(b.early90,b.closing)-pct(a.early90,a.closing));}
+
+function init(){
+  if(ANON){var tb=document.getElementById('tabbar');if(tb)tb.style.display='none';}
+  document.getElementById('sub').textContent='Pelanggan baru '+D.meta.window_start+' s/d '+D.meta.window_end+(ANON?'':'');
+  document.getElementById('gen').textContent=D.meta.generated;
+  const fs=document.getElementById('fromM'),ts=document.getElementById('toM');
+  MONTHS.forEach(m=>{fs.add(new Option(m,m));ts.add(new Option(m,m));});
+  fs.value=MONTHS[0];ts.value=MONTHS[MONTHS.length-1];
+  const bf=document.getElementById('bf');D.branches.forEach(b=>bf.add(new Option(b.branch_name,b.branch_id)));
+  const upd=()=>{branch=bf.value;fromM=fs.value;toM=ts.value;if(fromM>toM){toM=fromM;ts.value=toM;}render();};
+  [fs,ts,bf].forEach(e=>e.onchange=upd);
+  branch='ALL';fromM=MONTHS[0];toM=MONTHS[MONTHS.length-1];
+  render();
+}
+function renderCohortTable(){
+  const rows=monthly(),scope=branch==='ALL'?'(semua cabang)':('· cabang '+bName[branch]);
+  document.getElementById('ctScope').textContent=scope;
+  document.querySelector('#ctbl thead').innerHTML='<tr><th class="first">Bulan</th><th class="first">Cabang</th><th>Pelanggan baru</th><th>Masih aktif</th><th>Berhenti</th><th>Berhenti cepat</th>'+(ANON?'':'<th>Pendapatan hilang/bln</th>')+'</tr>';
+  const bn=branch==='ALL'?'Semua':bName[branch];
+  document.querySelector('#ctbl tbody').innerHTML=rows.map(r=>{const cepat=pct(r.early90,r.closing),st=statusOf(cepat);
+    return `<tr><td class="first">${r.bln}</td><td class="first">${bn}</td><td>${fmt(r.closing)}</td><td>${fmt(r.aktif)} (${pct(r.aktif,r.closing).toFixed(0)}%)</td><td>${fmt(r.terminate)} (${pct(r.terminate,r.closing).toFixed(0)}%)</td><td><span class="status" style="background:${st[1]}22;color:${st[1]}">${cepat.toFixed(0)}%</span></td>`+(ANON?'':`<td>${rp(r.mrr_term)}</td>`)+`</tr>`;}).join('')||`<tr><td colspan="${ANON?6:7}" style="text-align:center;color:var(--muted)">Tak ada data pada seleksi ini.</td></tr>`;
+}
+function render(){
+  const t=blank();cur().forEach(r=>add(t,r));
+  const aktifP=pct(t.aktif,t.closing),berhenti=pct(t.terminate,t.closing),cepat=pct(t.early90,t.closing);
+  const st=statusOf(cepat);
+  const worst=byBranch()[0];
+  document.getElementById('verdict').innerHTML=
+    `Dari <b>${fmt(t.closing)}</b> pelanggan baru, <b style="color:var(--ok)">${aktifP.toFixed(0)}% masih aktif</b>. `+
+    `Tapi <b style="color:var(--bad)">${berhenti.toFixed(0)}% sudah berhenti</b>${ANON?'. ':` — setara <b>${rp(t.mrr_term)}/bulan</b> pendapatan hilang. `}`+
+    (branch==='ALL'&&worst?`Cabang <b>${worst.name}</b> paling perlu perhatian.`:'');
+  // cards
+  const C=[
+    ['Pelanggan baru',fmt(t.closing),'dalam 1 tahun','var(--txt)'],
+    ['Masih aktif',aktifP.toFixed(0)+'%',fmt(t.aktif)+' pelanggan','var(--ok)'],
+    ['Berhenti berlangganan',berhenti.toFixed(0)+'%',fmt(t.terminate)+' pelanggan','var(--bad)'],
+    ['Berhenti cepat (<3 bln)',cepat.toFixed(0)+'%',st[0],st[1]],
+  ];
+  if(!ANON)C.push(['Pendapatan hilang / bln',rp(t.mrr_term),'dari yang berhenti','var(--bad)']);
+  document.getElementById('cards').innerHTML=C.map(c=>`<div class="card"><div class="l">${c[0]}</div><div class="v" style="color:${c[3]}">${c[1]}</div><div class="d">${c[2]}</div></div>`).join('');
+  renderTrend();renderCohortTable();renderBranch();renderActions(worst,cepat);
+}
+function renderTrend(){
+  const rows=monthly(),el=document.getElementById('trend');
+  if(!rows.length){el.innerHTML='<div class="cap">Tak ada data.</div>';return;}
+  const W=960,H=240,pl=40,pr=14,pt=14,pb=42,iw=W-pl-pr,ih=H-pt-pb;
+  const v=rows.map(r=>pct(r.early90,r.closing)),max=Math.max(6,...v)*1.15;
+  const X=i=>pl+(rows.length===1?iw/2:iw*i/(rows.length-1)),Y=x=>pt+ih*(1-x/max);
+  let grid='';for(let s=0;s<=3;s++){const val=max*s/3,y=Y(val);grid+=`<line x1="${pl}" y1="${y}" x2="${W-pr}" y2="${y}" stroke="var(--line)"/><text x="${pl-6}" y="${y+4}" text-anchor="end" fill="var(--muted)" font-size="12">${val.toFixed(0)}%</text>`;}
+  const xl=rows.map((r,i)=>`<text x="${X(i)}" y="${H-pb+20}" text-anchor="middle" fill="var(--muted)" font-size="11" transform="rotate(-35 ${X(i)} ${H-pb+20})">${r.bln}</text>`).join('');
+  const poly=`<polyline fill="none" stroke="var(--bad)" stroke-width="3" points="${v.map((x,i)=>X(i)+','+Y(x)).join(' ')}"/>`+
+    v.map((x,i)=>{const mat=matured(rows[i].bln);return `<circle cx="${X(i)}" cy="${Y(x)}" r="5" fill="${mat?'var(--bad)':'var(--panel)'}" stroke="var(--bad)" stroke-width="2.5"><title>${rows[i].bln}: ${x.toFixed(0)}% berhenti cepat</title></circle>`;}).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto">${grid}${poly}${xl}</svg>`;
+}
+function renderBranch(){
+  const rows=byBranch(),max=Math.max(...rows.map(r=>pct(r.early90,r.closing)),1);
+  document.getElementById('bars').innerHTML=rows.map(r=>{const p=pct(r.early90,r.closing),c=statusOf(p)[1];
+    return `<div class="hbar"><div class="nm">${r.name}</div><div class="track"><div class="fill" style="width:${Math.max(8,100*p/max)}%;background:${c}">${p.toFixed(0)}%</div></div></div>`;}).join('');
+  document.querySelector('#tbl thead').innerHTML='<tr><th class="first">Cabang</th><th>Pelanggan baru</th><th>Berhenti</th><th>Berhenti cepat</th>'+(ANON?'':'<th>Pendapatan hilang/bln</th>')+'<th>Status</th></tr>';
+  document.querySelector('#tbl tbody').innerHTML=rows.map(r=>{const p=pct(r.early90,r.closing),st=statusOf(p);
+    return `<tr><td class="first">${r.name}</td><td>${fmt(r.closing)}</td><td>${fmt(r.terminate)} (${pct(r.terminate,r.closing).toFixed(0)}%)</td><td>${p.toFixed(0)}%</td>`+(ANON?'':`<td>${rp(r.mrr_term)}</td>`)+`<td><span class="status" style="background:${st[1]}22;color:${st[1]}">${st[0]}</span></td></tr>`;}).join('');
+}
+function renderActions(worst,cepat){
+  const a=[];
+  if(cepat>=5)a.push('<b>Perbaiki cara bonus sales:</b> jangan bayar bonus penuh di awal. Tahan sebagian sampai pelanggan bertahan 3 bulan — ini menekan "closing asal banyak".');
+  else a.push('<b>Pertahankan:</b> tingkat berhenti cepat masih relatif aman, jaga agar tidak naik.');
+  if(worst)a.push(`<b>Prioritaskan cabang ${worst.name}:</b> paling banyak pelanggan berhenti cepat (${pct(worst.early90,worst.closing).toFixed(0)}%). Cek sales & kualitas pemasangan di sana.`);
+  a.push('<b>Pantau tiap bulan:</b> nilai sales dari pelanggan yang BERTAHAN, bukan jumlah closing.');
+  if(!ANON)a.push('Untuk daftar pelanggan & sales yang perlu diaudit, buka <a class="link" href="index.html">dashboard lengkap</a> lalu klik cabang/sales.');
+  document.getElementById('actions').innerHTML=a.map(x=>`<li>${x}</li>`).join('');
+}
+init();
+</script>
+</body></html>
